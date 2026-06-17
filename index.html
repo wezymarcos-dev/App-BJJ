@@ -1525,6 +1525,41 @@ async function renderCal(){
   await loadClanData();
 }
 
+async function loadSuggestedClans(){
+  var client=getSB();if(!client)return;
+  var el_sc=document.getElementById('suggested-clans');if(!el_sc)return;
+  el_sc.innerHTML='<div style="font-family:var(--pf);font-size:5px;color:var(--muted);text-align:center;padding:8px">Cargando clanes...</div>';
+  var res=await client.from('clans').select('id,name,shield,description').limit(10);
+  if(!res.data||!res.data.length){el_sc.innerHTML='<div style="font-family:var(--pf);font-size:5px;color:var(--muted);text-align:center;padding:8px">No hay clanes disponibles</div>';return;}
+  el_sc.innerHTML='<div style="font-family:var(--pf);font-size:5px;color:var(--muted);margin-bottom:8px;text-align:left">CLANES DISPONIBLES</div>';
+  res.data.forEach(function(clan){
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:10px;padding:10px;background:rgba(10,10,20,0.6);border-radius:8px;border:1px solid #333;margin-bottom:6px';
+    var shield=document.createElement('div');shield.style.cssText='font-size:20px;flex-shrink:0';shield.textContent=clan.shield||'⚔️';
+    var info=document.createElement('div');info.style.cssText='flex:1;min-width:0';
+    var nm=document.createElement('div');nm.style.cssText='font-family:var(--pf);font-size:6.5px;color:var(--gold)';nm.textContent=(clan.name||'').toUpperCase();
+    info.appendChild(nm);
+    if(clan.description){var desc=document.createElement('div');desc.style.cssText='font-family:var(--pf);font-size:4.5px;color:var(--muted);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis';desc.textContent=clan.description;info.appendChild(desc);}
+    var btn=document.createElement('button');
+    btn.style.cssText='padding:6px 12px;background:rgba(124,58,237,0.3);border:1px solid var(--purple);border-radius:6px;font-family:var(--pf);font-size:5px;color:var(--pl);cursor:pointer;flex-shrink:0';
+    btn.textContent='UNIRSE';
+    (function(id){btn.onclick=function(){joinClanById(id);};})(clan.id);
+    div.appendChild(shield);div.appendChild(info);div.appendChild(btn);
+    el_sc.appendChild(div);
+  });
+}
+
+async function joinClanById(clanId){
+  var client=getSB();if(!client||!currentUser)return;
+  if(_clanId){showToast('Ya estás en un clan');return;}
+  var res=await client.from('clan_members').insert({clan_id:clanId,user_id:currentUser.id});
+  if(res.error){showToast('Error al unirse: '+res.error.message);return;}
+  _clanId=clanId;
+  showToast('¡Bienvenido al clan!');
+  var nc=document.getElementById('no-clan');if(nc)nc.style.display='none';
+  await loadClanData();
+}
+
 async function loadClanData(){
   if(!currentUser){var msg=document.getElementById('clan-loading-msg');if(msg)msg.textContent='Inicia sesion para ver el clan';return;}
   var client=getSB();if(!client)return;
